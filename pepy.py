@@ -142,7 +142,7 @@ def summary(bot, update):
     global filled_file
     filled_file=(request_data["(Club)"]+"-"+request_data["(Edificio)"]+"-"+
                 request_data["(Dependencia)"]+"-"+request_data["(Fecha)"]+"-"
-                +request_data["(Nombre)"]).replace(" ","_")
+                +request_data["(Nombre)"]).replace(" ","_").replace("/","-")
     f = open(filled_file+".json","w")
     json.dump(request_data,f)
     f.close()
