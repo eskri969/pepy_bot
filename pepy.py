@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 PERMINIT, NOMBRE, DNI, CLUB, ACTIVIDAD, TELEFONO, EDIFICIO, DEPENDENCIA, FECHA, HENTRADA, HSALIDA, SUMMARY, MAIL = range(13)
 form=open("permisodeAula.json","r")
 request_data = json.load(form)
+secret=open("secret.json","r")
+passw = json.load(secret)
+filled_file=""
 
 def exit(bot, update):
     user = update.message.from_user
@@ -79,7 +82,7 @@ def nombre(bot, update):
 
 def dni(bot, update):
     request_data["(DNI)"]=update.message.text
-    update.message.reply_text('¿Cual es tu CLUB?',reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text('¿Cual es tu club?',reply_markup=ReplyKeyboardRemove())
     return CLUB
 
 def club(bot, update):
@@ -104,7 +107,8 @@ def edificio(bot, update):
 
 def dependencia(bot, update):
     request_data["(Dependencia)"]=update.message.text
-    update.message.reply_text('¿Qué día la necesitas?',reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text('¿Qué día la necesitas?, Por favor indica día y mes.'
+    ,reply_markup=ReplyKeyboardRemove())
     return FECHA
 
 def fecha(bot, update):
@@ -135,19 +139,23 @@ def hsalida(bot, update):
 def summary(bot, update):
     #make .json again and execute backend.py
     print(request_data)
-    f = open("data.json","w")
+    global filled_file
+    filled_file=(request_data["(Club)"]+"-"+request_data["(Edificio)"]+"-"+
+                request_data["(Dependencia)"]+"-"+request_data["(Fecha)"]+"-"
+                +request_data["(Nombre)"]).replace(" ","_")
+    f = open(filled_file+".json","w")
     json.dump(request_data,f)
     f.close()
-    sh.python("backend.py","data.json")
+    sh.python("backend.py",filled_file+".json",filled_file+".pdf")
     update.message.reply_text('Pues en cuanto me des tu email te lo mando.'
     ,reply_markup=ReplyKeyboardRemove())
     return MAIL
 
 def mail(bot, update):
-    #send mail with .pdf
+    sh.python("mailsender.py",update.message.text,filled_file+".pdf")
+    sh.rm(filled_file+".pdf",filled_file+".json")
     reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
-    update.message.reply_text(
-        '¿Que quieres hacer ahora?',
+    update.message.reply_text('¿Que quieres hacer ahora?',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return PERMINIT
 
@@ -166,7 +174,7 @@ def error(bot, update, error):
 
 def main():
     # Create the EventHandler and pass it your bot's token.
-    updater = Updater("TOKEN")
+    updater = Updater(passw["token"])
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher

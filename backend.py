@@ -48,5 +48,5 @@ def save(form: io.BytesIO, filename: str):
 if __name__ == '__main__':
     canvas_data = run()
     form = merge(canvas_data, template_path="./PermisoDeAula1.pdf")
-    save(form, filename='out.pdf')
+    save(form, filename=sys.argv[2])
     sys.exit(0)
