@@ -39,7 +39,7 @@ filled_file=""
 def exit(bot, update):
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Pues adios! si algún dia me necesitas,'
+    update.message.reply_text('Pues adios! si algún dia me necesitas, '
                                 'ya sabes donde estoy.',
                               reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
