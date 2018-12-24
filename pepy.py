@@ -18,8 +18,10 @@ bot.
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
                           ConversationHandler)
-
 import logging
+import sh
+import json
+from time import sleep
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,8 +29,17 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-REST,PERMINIT, NOMBRE, DNI, CLUB, ACTIVIDAD, TELEFONO, EDIFICIO, DEPENDENCIA, FECHA, HENTRADA, HSALIDA, SUMMARY, MAIL = range(14)
+PERMINIT, NOMBRE, DNI, CLUB, ACTIVIDAD, TELEFONO, EDIFICIO, DEPENDENCIA, FECHA, HENTRADA, HSALIDA, SUMMARY, MAIL = range(13)
+form=open("permisodeAula.json","r")
+request_data = json.load(form)
 
+def exit(bot, update):
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    update.message.reply_text('Pues adios! si algún dia me necesitas,'
+                                'ya sabes donde estoy.',
+                              reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 def start(bot, update):
     reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
@@ -36,9 +47,19 @@ def start(bot, update):
 
     update.message.reply_text(
         'Hola mi nombre es Pepy y he sido creada para ayudar en el papeleo'
-        'de la ETSIT.\n\n ¿Que quieres hacer?',
+        'de la ETSIT.\nUsa /exit para parar esta conversacion en cualquier momento.'
+        'podrás volver a hablarme usando /start :).'
+        '\nUsa /cancel para parar cualquier papeleo que esté a medias.'
+        '\n\n ¿Que quieres hacer?.',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    return PERMINIT
 
+def cancel(bot, update):
+    print("cancel")
+    reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
+    update.message.reply_text(
+        'Vale pues hacemos como si esto nunca hubiese pasado.\n\n ¿Que quieres hacer?',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return PERMINIT
 
 def permInit(bot, update):
@@ -47,79 +68,96 @@ def permInit(bot, update):
         ' cosas para rellenarlo. Todo lo que escribas ahora estará tal cual en el'
         'permiso, así que cuidadito ;).',
         reply_markup=ReplyKeyboardRemove())
-    update.message.reply_text('¿Cual es tu NOMBRE?')
+    update.message.reply_text('¿Cual es tu nombre y apellidos?')
 
     return NOMBRE
 
 def nombre(bot, update):
-    update.message.reply_text('¿Dime tu DNI?',reply_markup=ReplyKeyboardRemove())
+    request_data["(Nombre)"]=update.message.text
+    update.message.reply_text('Dime tu DNI',reply_markup=ReplyKeyboardRemove())
     return DNI
 
 def dni(bot, update):
+    request_data["(DNI)"]=update.message.text
     update.message.reply_text('¿Cual es tu CLUB?',reply_markup=ReplyKeyboardRemove())
     return CLUB
 
 def club(bot, update):
+    request_data["(Club)"]=update.message.text
     update.message.reply_text('¿Para qué actividad es el permiso?',reply_markup=ReplyKeyboardRemove())
     return ACTIVIDAD
 
 def actividad(bot, update):
-    update.message.reply_text('¿Dime tu teléfono?',reply_markup=ReplyKeyboardRemove())
+    request_data["(Actividad)"]=update.message.text
+    update.message.reply_text('Dime tu teléfono movil',reply_markup=ReplyKeyboardRemove())
     return TELEFONO
 
 def telefono(bot, update):
+    request_data["(Telefono)"]=update.message.text
     update.message.reply_text('¿En que edificio está el aula?',reply_markup=ReplyKeyboardRemove())
     return EDIFICIO
 
 def edificio(bot, update):
+    request_data["(Edificio)"]=update.message.text
     update.message.reply_text('¿Qué aula es la que quieres?',reply_markup=ReplyKeyboardRemove())
     return DEPENDENCIA
 
 def dependencia(bot, update):
+    request_data["(Dependencia)"]=update.message.text
     update.message.reply_text('¿Qué día la necesitas?',reply_markup=ReplyKeyboardRemove())
     return FECHA
 
 def fecha(bot, update):
+    request_data["(Fecha)"]=update.message.text
     update.message.reply_text('¿Desde qué hora?',reply_markup=ReplyKeyboardRemove())
     return HENTRADA
 
 def hentrada(bot, update):
+    request_data["(HEntrada)"]=update.message.text
     update.message.reply_text('¿Hasta qué hora?',reply_markup=ReplyKeyboardRemove())
     return HSALIDA
 
 def hsalida(bot, update):
-    update.message.reply_text('Esto me has pedido:\n-\n-\n-\n-\n-\n-\n',
+    request_data["(HSalida)"]=update.message.text
+    s=""
+    for x in request_data.keys():
+        s+=(x+" : "+request_data[x]+"\n")
+    s=s.replace("(","")
+    s=s.replace(")","")
+    update.message.reply_text('Esto me has pedido:\n'+s,
     reply_markup=ReplyKeyboardRemove())
     reply_keyboard = [['Si', 'No']]
-    update.message.reply_text('Todo bien o volvemos a empezar',
+    update.message.reply_text('¿Todo bien?, si no lo esta volvemos a empezar',
     reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return SUMMARY
 
 
 def summary(bot, update):
-    update.message.reply_text('pues dejame tu mail y te lo mando en un momen'
+    #make .json again and execute backend.py
+    print(request_data)
+    f = open("data.json","w")
+    json.dump(request_data,f)
+    f.close()
+    sh.python("backend.py","data.json")
+    update.message.reply_text('Pues en cuanto me des tu email te lo mando.'
     ,reply_markup=ReplyKeyboardRemove())
     return MAIL
+
+def mail(bot, update):
+    #send mail with .pdf
+    reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
+    update.message.reply_text(
+        '¿Que quieres hacer ahora?',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    return PERMINIT
 
 
 def rest(bot, update):
     reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
-    print("start")
-
     update.message.reply_text(
-        'Pues esto ya esta termniando.\n\n ¿Que quieres hacer?',
+        '¿Que quieres hacer ahora?',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
     return PERMINIT
-
-def cancel(bot, update):
-    user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Bye! I hope we can talk again some day.',
-                              reply_markup=ReplyKeyboardRemove())
-
-    return ConversationHandler.END
-
 
 def error(bot, update, error):
     """Log Errors caused by Updates."""
@@ -160,13 +198,16 @@ def main():
 
             HSALIDA: [MessageHandler(Filters.text, hsalida)],
 
-            SUMMARY: [RegexHandler('^(Si|No)$', summary)],
+            SUMMARY: [RegexHandler('^(Si)$', summary),
+                      RegexHandler('^(No)$', rest)],
 
-            MAIL: [MessageHandler(Filters.text, rest)]
+            MAIL: [MessageHandler(Filters.text, mail)],
+
 
         },
 
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler('exit', exit),
+                   CommandHandler('cancel',cancel)]
     )
 
     dp.add_handler(conv_handler)

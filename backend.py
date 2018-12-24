@@ -8,7 +8,7 @@ def run():
     data = io.BytesIO()
     pdf = canvas.Canvas(data)
     template = pdfrw.PdfReader("PermisoDeAula1.pdf")
-    request_data=open("permisodeAula.json","r")
+    request_data=open(sys.argv[1],"r")
     user_data = json.load(request_data)
     print(user_data)
     for page in template.Root.Pages.Kids:
@@ -23,7 +23,7 @@ def run():
             padding = 2
             line_height = 0
             y=float(bottom)+padding+line_height
-            x=float(left)+padding
+            x=float(left)+padding+10
             pdf.drawString(x=x, y=y, text=value)
         pdf.showPage()
     pdf.save()
@@ -49,3 +49,4 @@ if __name__ == '__main__':
     canvas_data = run()
     form = merge(canvas_data, template_path="./PermisoDeAula1.pdf")
     save(form, filename='out.pdf')
+    sys.exit(0)
