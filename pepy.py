@@ -29,7 +29,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-PERMINIT, NOMBRE, DNI, CLUB, ACTIVIDAD, TELEFONO, EDIFICIO, DEPENDENCIA, FECHA, HENTRADA, HSALIDA, SUMMARY, MAIL = range(13)
+PERMINIT, NOMBRE, DNI, CLUB, ACTIVIDAD, TELEFONO, EDIFICIO, EDIFICIO_OTRO, DEPENDENCIA, FECHA, HENTRADA, HSALIDA, SUMMARY, MAIL = range(14)
 form=open("permisodeAula.json","r")
 request_data = json.load(form)
 secret=open("secret.json","r")
@@ -37,6 +37,8 @@ passw = json.load(secret)
 filled_file=""
 
 def exit(bot, update):
+    if filled_file != "":
+        sh.rm(filled_file+".pdf",filled_file+".json")
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text('Pues adios! si algún dia me necesitas, '
@@ -68,6 +70,8 @@ def cancel(bot, update):
     return PERMINIT
 
 def permInit(bot, update):
+    global filled_file
+    filled_file=""
     update.message.reply_text(
         'Vale!\nSoy una experta en esto, pero necesito que me respondas un par de'
         ' cosas para rellenarlo. Todo lo que escribas ahora estará tal cual en el'
@@ -99,10 +103,18 @@ def actividad(bot, update):
 
 def telefono(bot, update):
     request_data["(Telefono)"]=update.message.text
-    update.message.reply_text('¿En que edificio está el aula?',reply_markup=ReplyKeyboardRemove())
+    reply_keyboard = [['A', 'B', 'C', 'D', 'Otro']]
+    update.message.reply_text('¿En que edificio está el aula?',
+    reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return EDIFICIO
 
+def edificio_otro(bot, update):
+    update.message.reply_text('Escribeme el nombre del edificio, o espacio peculiar',
+    reply_markup=ReplyKeyboardRemove())
+    return DEPENDENCIA
+
 def edificio(bot, update):
+    print(update.message.text)
     request_data["(Edificio)"]=update.message.text
     update.message.reply_text('¿Qué aula es la que quieres?',reply_markup=ReplyKeyboardRemove())
     return DEPENDENCIA
@@ -205,7 +217,10 @@ def main():
 
             TELEFONO: [MessageHandler(Filters.text, telefono)],
 
-            EDIFICIO: [MessageHandler(Filters.text, edificio)],
+            EDIFICIO: [RegexHandler('^(A|B|C|D)$', edificio),
+                       RegexHandler('^(Otro)',edificio_otro)],
+
+            EDIFICIO_OTRO: [MessageHandler(Filters.text, edificio)],
 
             DEPENDENCIA: [MessageHandler(Filters.text, dependencia)],
 
