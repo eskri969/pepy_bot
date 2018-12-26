@@ -46,10 +46,12 @@ def exit(bot, update):
 
 def start(bot, update):
     reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
-    print("start")
-
+    user ="@"+update.message.from_user.username
+    if user =="@":
+            user = update.message.from_user.first_name
+    logger.info("User %s started the conversation.", user)
     update.message.reply_text(
-        'Hola mi nombre es Pepy y he sido creada para ayudar en el papeleo'
+        'Hola '+user+',\nmi nombre es Pepy y he sido creada para ayudar en el papeleo'
         'de la ETSIT.\nUsa /exit para parar esta conversacion en cualquier momento.'
         'podrás volver a hablarme usando /start :).'
         '\nUsa /cancel para parar cualquier papeleo que esté a medias.'
@@ -140,7 +142,7 @@ def summary(bot, update):
     #make .json again and execute backend.py
     print(request_data)
     global filled_file
-    filled_file=(request_data["(Club)"]+"-"+request_data["(Edificio)"]+"-"+
+    filled_file=(request_data["(Club)"]+"-"+request_data["(Edificio)"]+""+
                 request_data["(Dependencia)"]+"-"+request_data["(Fecha)"]+"-"
                 +request_data["(Nombre)"]).replace(" ","_").replace("/","-")
     f = open(filled_file+".json","w")
@@ -152,6 +154,13 @@ def summary(bot, update):
     return MAIL
 
 def mail(bot, update):
+    if update.message.text.lower() == "pepi@etsit.upm.es" :
+         update.message.reply_text('No es muy buena idea hacer eso, será mejor'
+         'que primero lo recibas en tu bandeja de correo y luego se lo envíes'
+         'a la persona que le corresponda ;).\n Ahora dame tu email y te lo mando'
+         ,reply_markup=ReplyKeyboardRemove())
+         return MAIL
+
     sh.python("mailsender.py",update.message.text,filled_file+".pdf")
     sh.rm(filled_file+".pdf",filled_file+".json")
     reply_keyboard = [['Nuevo Permiso de Aulas', 'Nuevo Permiso de Aulas']]
