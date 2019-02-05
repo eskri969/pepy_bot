@@ -1,2 +1,4 @@
-# ignore the file literally named secret.json
+# ignore the file literally named secret.json and perm files
 secret.json
+cert.pem
+key.pem

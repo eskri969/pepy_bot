@@ -30,12 +30,12 @@ import ssl
 # Wehbook parameters
 WEBHOOK_HOST = 'skynet.eurielec.etsit.upm.es'
 WEBHOOK_PORT = 443  # 443, 80, 88 or 8443 (port need to be 'open')
-WEBHOOK_LISTEN = '0.0.0.0'  # You may need to put the IP address
+WEBHOOK_LISTEN = "0.0.0.0"  # You may need to put the IP address
 
 # Path to the ssl certificate
-WEBHOOK_SSL_CERT = '/home/skynet/xusta_BOT/certs/cert.pem'
+WEBHOOK_SSL_CERT = 'cert.pem'
 # Path to the ssl private key
-WEBHOOK_SSL_PRIV = '/home/skynet/xusta_BOT/certs/key.pem'
+WEBHOOK_SSL_PRIV = 'key.pem'
 
 '''
 # Define app as aiohttp web application
@@ -55,6 +55,23 @@ print("Request handler started!")
 
 app.router.add_post('/{token}/', handle)
 '''
+app = web.Application()
+print("Initializating pepy_bot!")
+async def handle(request):
+    if request.match_info.get(passw["token"]) == bot.token:
+        request_body_dict = await request.json()
+        update = telebot.types.Update.de_json(request_body_dict)
+        bot.process_new_updates([update])
+        return web.Response()
+    else:
+        return web.Response(status=403)
+print("Request handler started!")
+
+
+app.router.add_post('/{token}/', handle)
+
+
+
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -284,13 +301,13 @@ def main():
 
     # Start the Bot
     #updater.start_polling()
-
+    '''
     updater.start_webhook(listen=WEBHOOK_LISTEN,
                       port=WEBHOOK_PORT,
                       url_path=passw["token"],
                       key=WEBHOOK_SSL_PRIV,
                       cert=WEBHOOK_SSL_CERT,
-                      webhook_url=('https://'+WEBHOOK_HOST+':'+str(WEBHOOK_PORT)+passw["token"]))
+                      webhook_url=('https://'+WEBHOOK_HOST+':'+str(WEBHOOK_PORT)+"/"+passw["token"]+"/"))
 
     # Build ssl context with certs and keys
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
@@ -302,11 +319,24 @@ def main():
         port=WEBHOOK_PORT,
         ssl_context=context,
     )
+    '''
+    updater.start_webhook(listen=WEBHOOK_LISTEN, port=WEBHOOK_PORT, url_path=passw["token"])
+    updater.bot.set_webhook( webhook_url=('https://'+WEBHOOK_HOST+':'+str(WEBHOOK_PORT)+"/"+passw["token"]+"/"),
+                            certificate=open('cert.pem', 'rb'))
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context.load_cert_chain(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV)
 
+    web.run_app(
+        app,
+        host=WEBHOOK_LISTEN,
+        port=WEBHOOK_PORT,
+        ssl_context=context,
+    )
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
+
 
 
 if __name__ == '__main__':
